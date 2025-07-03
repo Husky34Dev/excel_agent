@@ -15,8 +15,8 @@ Sistema inteligente para hacer consultas en archivos Excel usando IA y pandas. O
 
 1. Clonar el repositorio:
 ```bash
-git clone <repository-url>
-cd excel-chatbot
+git clone https://github.com/Husky34Dev/excel_agent.git
+cd excel_agent
 ```
 
 2. Instalar dependencias:
