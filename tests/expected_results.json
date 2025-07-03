@@ -1,0 +1,66 @@
+{
+  "region_mayor_beneficio": {
+    "query": "¿Cuál es la región con mayor beneficio total?",
+    "expected": "Sur",
+    "value": 134971.0
+  },
+  "margen_promedio_por_region": {
+    "query": "¿Cuál es el promedio de margen de beneficio por región?",
+    "expected": {
+      "Centro": 24.18630121343197,
+      "Este": 22.08871319442814,
+      "Norte": 23.884277007844574,
+      "Oeste": 28.017976947735125,
+      "Sur": 26.007588437210984
+    },
+    "overall_avg": 24.836971360130157
+  },
+  "mes_mayores_ingresos": {
+    "query": "¿En qué mes se registraron los mayores ingresos totales?",
+    "expected": "2024-10",
+    "value": 319306.0
+  },
+  "correlacion_ingresos_gastos": {
+    "query": "¿Cuál es la correlación entre ingresos y gastos?",
+    "expected": 0.969033333548556,
+    "interpretation": "Positiva fuerte"
+  },
+  "region_mas_eficiente": {
+    "query": "¿Cuál es la región más eficiente (menor ratio gastos/ingresos)?",
+    "expected": "Oeste",
+    "ratio": 0.7198202305226487
+  },
+  "tendencia_beneficios": {
+    "query": "¿Cuál es la tendencia temporal de los beneficios mensuales?",
+    "expected": "Decreciente",
+    "slope": NaN
+  },
+  "outliers_ingresos": {
+    "query": "¿Cuántos valores atípicos hay en los ingresos y cuáles son?",
+    "expected": 0,
+    "outliers": []
+  },
+  "mejor_trimestre": {
+    "query": "¿Cuál fue el trimestre con mejores beneficios totales?",
+    "expected": "2025-Q2",
+    "value": 205610.0
+  },
+  "distribucion_por_region": {
+    "query": "¿Cómo se distribuyen los registros por región?",
+    "expected": {
+      "Norte": 25,
+      "Este": 21,
+      "Sur": 21,
+      "Centro": 19,
+      "Oeste": 14
+    },
+    "region_mas_registros": "Norte",
+    "max_registros": 25
+  },
+  "rango_temporal": {
+    "query": "¿Cuál es el rango temporal de los datos y cuántos días abarca?",
+    "fecha_inicio": "2024-07-04",
+    "fecha_fin": "2025-06-26",
+    "dias_totales": 357
+  }
+}
