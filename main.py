@@ -5,18 +5,19 @@ from pathlib import Path
 from datetime import datetime
 from config.settings import get_settings
 from config.logger_config import configure_logging, get_logger
-from src.agent.code_agent import CodeAgent
+from src.agent.simple_cached_agent import SimpleCachedCodeAgent
 from src.utils import parse_output, ExecutionError, CodeAgentError, LoaderError
 
 def print_banner():
     """Mostrar banner del chatbot"""
     print("=" * 70)
-    print("🤖 EXCEL CHATBOT - Consultas Inteligentes sobre datos Excel")
+    print("🤖 EXCEL CHATBOT - Consultas Instantáneas sobre datos Excel")
     print("=" * 70)
-    print("💡 Haz preguntas complejas sobre tus datos Excel")
+    print("⚡ DataFrame precargado en memoria para consultas súper rápidas")
     print("📝 Escribe 'salir', 'exit' o 'quit' para terminar")
     print("📊 Escribe 'cambiar archivo' para usar otro Excel")
     print("🔍 Escribe 'ayuda' para ver ejemplos de consultas")
+    print("📈 Escribe 'stats' para ver estadísticas del caché")
     print("=" * 70)
 
 def print_help():
@@ -32,6 +33,10 @@ def print_help():
     print("• ¿Cuál fue el trimestre con mejores beneficios?")
     print("• Muestra las primeras 10 filas")
     print("• ¿Cuáles son las estadísticas descriptivas?")
+    print("\n🔧 COMANDOS ESPECIALES:")
+    print("• 'stats' o 'cache' - Ver estadísticas del caché")
+    print("• 'clear cache' - Limpiar caché en memoria")
+    print("• 'cambiar archivo' - Usar otro archivo Excel")
     print("-" * 50)
 
 def get_excel_file():
@@ -39,7 +44,7 @@ def get_excel_file():
     while True:
         excel_path = input("\n📁 Ingresa la ruta del archivo Excel (Enter para usar demo.xlsx): ").strip()
         if not excel_path:
-            excel_path = "data/input/demo.xlsx"
+            excel_path = "data/input/demo.csv"
         
         if Path(excel_path).exists():
             return excel_path
@@ -51,10 +56,7 @@ def process_question(agent, excel_path, question, logger, specific_sheet=None):
     """Procesar una pregunta del usuario"""
     try:
         logger.info(f"Procesando pregunta: {question}")
-        if specific_sheet:
-            result = agent.ask(excel_path, question, specific_sheet=specific_sheet)
-        else:
-            result = agent.ask(excel_path, question)
+        result = agent.ask(excel_path, question, sheet_name=specific_sheet)
         return result, None
     except LoaderError as e:
         error_msg = f"Error al cargar el archivo Excel: {str(e)}"
@@ -171,7 +173,7 @@ Modos de uso:
             logger.info(f"Pregunta: {question}")
 
             # Inicializar agente
-            agent = CodeAgent(
+            agent = SimpleCachedCodeAgent(
                 api_key=settings.groq_api_key,
                 model=settings.groq_model,
                 cpu_time=settings.sandbox_cpu_time,
@@ -203,9 +205,16 @@ Modos de uso:
         excel_path = args.file
         print(f"📊 Usando archivo: {excel_path}")
     else:
-        if args.file != "data/input/demo.xlsx":
+        if args.file == "data/input/demo.xlsx":
+            # Archivo demo por defecto
+            excel_path = args.file
+            print(f"📊 Usando archivo demo: {excel_path}")
+            if not Path(excel_path).exists():
+                print(f"❌ Archivo demo no encontrado: {excel_path}")
+                excel_path = get_excel_file()
+        else:
             print(f"❌ Archivo especificado no encontrado: {args.file}")
-        excel_path = get_excel_file()
+            excel_path = get_excel_file()
     
     logger.info(f"Archivo Excel seleccionado: {excel_path}")
 
@@ -214,7 +223,7 @@ Modos de uso:
         settings = get_settings()
         logger.info(f"Iniciando agente con modelo {settings.groq_model}")
         
-        agent = CodeAgent(
+        agent = SimpleCachedCodeAgent(
             api_key=settings.groq_api_key,
             model=settings.groq_model,
             cpu_time=settings.sandbox_cpu_time,
@@ -224,6 +233,21 @@ Modos de uso:
         
         print(f"✅ Agente iniciado correctamente con modelo {settings.groq_model}")
         print(f"📄 Logs guardados en: logs/excel_chatbot.log")
+        
+        # PRECARGA AUTOMÁTICA: Cargar DataFrame UNA VEZ al inicio
+        print(f"\n🔄 Precargando DataFrame automáticamente...")
+        print(f"📂 Archivo: {excel_path}")
+        
+        if not agent.preload_dataframe(excel_path, args.sheet):
+            print("❌ Error precargando DataFrame. Continuando con carga bajo demanda.")
+            logger.warning("Error en precarga, usando carga bajo demanda")
+        else:
+            # Mostrar estadísticas del caché
+            cache_stats = agent.get_cache_stats()
+            print(f"✅ DataFrame precargado exitosamente:")
+            print(f"   💾 Memoria utilizada: ~{cache_stats.get('memory_usage_mb', 0):.1f} MB")
+            print(f"   📂 Caché persistente: {'Sí' if cache_stats.get('has_disk_cache') else 'No'}")
+            print(f"   ⚡ Sistema listo para consultas instantáneas")
 
         # Loop principal del chatbot
         question_count = 0
@@ -245,6 +269,30 @@ Modos de uso:
                     excel_path = get_excel_file()
                     print(f"📊 Archivo cambiado a: {excel_path}")
                     logger.info(f"Archivo cambiado a: {excel_path}")
+                    # Precargar nuevo archivo
+                    print(f"🔄 Precargando nuevo DataFrame...")
+                    if agent.preload_dataframe(excel_path, args.sheet):
+                        cache_stats = agent.get_cache_stats()
+                        print(f"✅ Nuevo DataFrame cargado: {cache_stats.get('rows', 0):,} filas")
+                    continue
+                elif question.lower() in ['stats', 'estadisticas', 'cache']:
+                    cache_stats = agent.get_cache_stats()
+                    if cache_stats.get('loaded', False):
+                        print(f"\n📊 ESTADÍSTICAS DEL CACHÉ:")
+                        print(f"   📁 Archivo: {cache_stats.get('file_path', 'N/A')}")
+                        print(f"   📏 Filas: {cache_stats.get('rows', 0):,}")
+                        print(f"   📋 Columnas: {cache_stats.get('columns', 0)}")
+                        print(f"   💾 Memoria: ~{cache_stats.get('memory_usage_mb', 0):.1f} MB")
+                        print(f"   🕐 Cargado: {cache_stats.get('load_time', 'N/A')}")
+                        print(f"   📂 Caché en disco: {'Sí' if cache_stats.get('has_disk_cache') else 'No'}")
+                        if cache_stats.get('file_size_mb'):
+                            print(f"   📦 Tamaño archivo: {cache_stats.get('file_size_mb', 0):.1f} MB")
+                    else:
+                        print("📊 No hay DataFrame cargado en caché")
+                    continue
+                elif question.lower() in ['clear cache', 'limpiar cache', 'clear']:
+                    agent.clear_cache()
+                    print("🧹 Caché limpiado exitosamente")
                     continue
                 elif not question:
                     print("💡 Por favor, escribe una pregunta o 'ayuda' para ver ejemplos")

@@ -4,8 +4,10 @@ import os
 import platform
 import ast
 import re
+import pickle
 from pathlib import Path
-from typing import Set, List
+from typing import Set, List, Optional
+import pandas as pd
 from config.settings import get_settings
 from config.logger_config import get_logger
 
@@ -25,6 +27,7 @@ class SandboxExecutor:
     Ejecuta código Python en un proceso aislado con límites.
     Compatible con Windows y sistemas Unix.
     Incluye validación de imports para mayor seguridad.
+    Soporta pre-inyección de DataFrames para mejor rendimiento.
     """
     
     # Imports permitidos (whitelist)
@@ -88,7 +91,85 @@ class SandboxExecutor:
         else:
             logger.debug("Ejecutando en Windows, sin restricciones de usuario")
             self.uid = None
+        
+        self._injected_dataframe_path: Optional[str] = None
+        
+        # Auto-limpiar archivos antiguos al inicializar
+        self._cleanup_old_files()
+    
+    def _cleanup_old_files(self) -> None:
+        """Limpia archivos temporales antiguos del sandbox."""
+        try:
+            import time
+            current_time = time.time()
+            
+            # Eliminar archivos más antiguos de 1 hora
+            for file_path in self.temp_dir.glob("*"):
+                if file_path.is_file():
+                    file_age = current_time - file_path.stat().st_mtime
+                    if file_age > 3600:  # 1 hora
+                        try:
+                            file_path.unlink()
+                            logger.debug(f"Archivo temporal antiguo eliminado: {file_path.name}")
+                        except:
+                            pass  # Ignorar errores de limpieza
+        except Exception as e:
+            logger.debug(f"Error en limpieza automática: {e}")
+    
+    def inject_dataframe(self, df: pd.DataFrame) -> None:
+        """
+        Pre-inyecta un DataFrame que estará disponible como 'df' en todas las ejecuciones.
+        
+        Args:
+            df: DataFrame a inyectar
+        """
+        try:
+            # Crear archivo pickle temporal para el DataFrame
+            with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.pkl', dir=self.temp_dir) as tmp_file:
+                pickle.dump(df, tmp_file)
+                self._injected_dataframe_path = tmp_file.name
+            
+            logger.debug(f"DataFrame inyectado exitosamente: {df.shape[0]} filas, {df.shape[1]} columnas")
+            
+        except Exception as e:
+            logger.error(f"Error inyectando DataFrame: {e}")
+            raise
+    
+    def clear_injected_dataframe(self) -> None:
+        """Limpia el DataFrame inyectado."""
+        if self._injected_dataframe_path and os.path.exists(self._injected_dataframe_path):
+            try:
+                os.unlink(self._injected_dataframe_path)
+                self._injected_dataframe_path = None
+                logger.debug("DataFrame inyectado limpiado")
+            except Exception as e:
+                logger.warning(f"Error limpiando DataFrame inyectado: {e}")
+    
+    def _get_setup_code(self) -> str:
+        """
+        Genera el código de setup que carga el DataFrame inyectado.
+        
+        Returns:
+            str: Código de setup
+        """
+        if not self._injected_dataframe_path:
+            return """
+import pandas as pd
+import numpy as np
+from datetime import datetime
+"""
+        
+        return f"""
+import pandas as pd
+import numpy as np
+import pickle
+from datetime import datetime
 
+# Cargar DataFrame pre-inyectado
+with open(r'{self._injected_dataframe_path}', 'rb') as f:
+    df = pickle.load(f)
+"""
+    
     def _validate_imports(self, code: str) -> None:
         """
         Valida que el código solo use imports permitidos.
@@ -244,7 +325,9 @@ class SandboxExecutor:
         
         try:
             # Escribir código al archivo
-            script_path.write_text(code, encoding='utf-8')
+            setup_code = self._get_setup_code()
+            full_code = f"{setup_code}\n{code}"
+            script_path.write_text(full_code, encoding='utf-8')
             
             # Preparar comando y configuración según el SO
             cmd = ["python", str(script_path)]

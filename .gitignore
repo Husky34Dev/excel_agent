@@ -35,10 +35,21 @@ env/
 *.swo
 *~
 
-# Project specific
+# Project specific - CONFIG Y DATOS SENSIBLES
 .env
-.sandbox_tmp/
 *.log
+
+# Project specific - ARCHIVOS TEMPORALES Y CACHÉ
+.sandbox_tmp/
+cache/
+logs/
+
+# Project specific - DATOS DE ENTRADA (NO SUBIR)
+data/input/*.xlsx
+data/input/*.xls  
+data/input/*.csv
+# Permitir solo el script de conversión
+!data/input/convert.py
 
 # Testing
 .pytest_cache/
@@ -48,3 +59,8 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Archivos temporales Python
+*.tmp
+*.bak
+*.swp
