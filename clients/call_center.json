@@ -1,0 +1,46 @@
+{
+  "client_name": "Call Center Analytics",
+  "client_id": "call_center_demo",
+  "description": "Análisis de campañas telefónicas y call center",
+  
+  "ui": {
+    "banner_title": "📞 CALL CENTER ANALYTICS",
+    "banner_subtitle": "Análisis Inteligente de Campañas Telefónicas",
+    "welcome_message": "Sistema optimizado para análisis de datos de call center",
+    "default_file": "data/call_center/demo.xlsx",
+    "example_questions": [
+      "¿Cuántas llamadas fueron atendidas hoy?",
+      "¿Cuál es la duración promedio de las llamadas?",
+      "¿Qué campaña tiene mejor tasa de conversión?",
+      "¿En qué horario se atienden más llamadas?",
+      "¿Cuál es el resultado más común de las llamadas?"
+    ]
+  },
+  
+  "data": {
+    "workspace_folder": "data/call_center",
+    "auto_detect_columns": true,
+    "expected_columns": {
+      "phone": ["numbercall", "telefono", "numero", "phone"],
+      "duration": ["duration", "duracion", "tiempo_llamada", "call_time"],
+      "campaign": ["campaign", "campana", "campaña", "camp"],
+      "result": ["resultcalldesc", "resultado", "status", "estado"],
+      "date": ["date", "fecha", "timestamp", "datetime"]
+    }
+  },
+  
+  "prompts": {
+    "domain_context": "Datos de call center con información de llamadas telefónicas, campañas, duraciones y resultados",
+    "specialized_instructions": [
+      "Para tasas de conversión, siempre usar porcentajes con 2 decimales",
+      "Para duraciones, convertir segundos a formato mm:ss si es necesario",
+      "Para análisis temporal, agrupar por horas del día o días de la semana",
+      "Considerar 'Atendida' como llamada exitosa para calcular tasas"
+    ],
+    "sample_queries": [
+      "Calcular porcentaje de llamadas atendidas vs no atendidas",
+      "Encontrar la hora del día con mayor actividad",
+      "Determinar qué campaña genera más conversiones"
+    ]
+  }
+}

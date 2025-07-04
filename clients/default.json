@@ -1,0 +1,31 @@
+{
+  "client_name": "Excel Agent - Genérico",
+  "client_id": "default",
+  "description": "Configuración genérica para análisis de Excel",
+  "ui": {
+    "banner_title": "🤖 EXCEL AGENT",
+    "banner_subtitle": "Análisis Inteligente de Datos Excel",
+    "welcome_message": "Sistema genérico para análisis de datos Excel",
+    "default_file": "data/default/simple-demo.xlsx",
+    "example_questions": [
+      "¿Cuántas filas tiene el Excel?",
+      "¿Cuáles son las columnas disponibles?",
+      "¿Cuál es el promedio de la primera columna numérica?",
+      "¿Hay valores nulos en los datos?",
+      "¿Cuáles son los valores únicos de la primera columna de texto?"
+    ]
+  },
+  "data": {
+    "workspace_folder": "data/default",
+    "auto_detect_columns": true,
+    "expected_columns": {}
+  },
+  "prompts": {
+    "domain_context": "Datos genéricos de Excel sin dominio específico",
+    "specialized_instructions": [
+      "Usar nombres de columnas exactos como aparecen en el dataset",
+      "Manejar valores nulos apropiadamente",
+      "Proporcionar resultados claros y concisos"
+    ]
+  }
+}

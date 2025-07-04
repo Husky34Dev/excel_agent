@@ -45,11 +45,8 @@ cache/
 logs/
 
 # Project specific - DATOS DE ENTRADA (NO SUBIR)
-data/input/*.xlsx
-data/input/*.xls  
-data/input/*.csv
-# Permitir solo el script de conversión
-!data/input/convert.py
+data/*/
+!data/*/README.md
 
 # Testing
 .pytest_cache/

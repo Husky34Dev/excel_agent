@@ -1,55 +1,59 @@
 """
-Agente de código simplificado con caché de DataFrame.
+Agente base modular con soporte para configuración de clientes.
 
-Este agente implementa la estrategia optimizada:
-1. Precarga el DataFrame completo UNA VEZ
-2. Lo mantiene en memoria para todas las consultas
-3. Envía solo esquema y ejemplos a Groq (nunca datos completos)
-4. Ejecuta código generado localmente sobre el DataFrame cacheado
+Este agente extiende SimpleCachedCodeAgent añadiendo:
+1. Integración con configuración de clientes
+2. Prompts personalizados por dominio
+3. Gestión de datos por workspace
+4. Sistema modular y extensible
 
-Autor: Excel Chatbot
+Autor: Excel Agent
 """
 
 import os
 from typing import Any, Optional, Dict
 from groq import Groq
 import logging
-from src.cache.persistent_cache import persistent_cache
-from src.executor.sandbox_executor import SandboxExecutor
-from src.utils import ExecutionError, PromptError, parse_output
+from core.cache.persistent_cache import persistent_cache
+from core.executor.sandbox_executor import SandboxExecutor
+from core.client_manager import ClientConfig
+from utils import ExecutionError, PromptError, parse_output
 from config.logger_config import get_logger
 
 logger = get_logger(__name__)
 
-class SimpleCachedCodeAgent:
+class BaseAgent:
     """
-    Agente simplificado que usa caché de DataFrame.
+    Agente base modular que integra configuración de clientes.
     
     Estrategia:
-    1. Precarga DataFrame completo al primer uso
-    2. Mantiene DataFrame en memoria (caché)
-    3. Envía solo esquema/ejemplos a Groq
-    4. Ejecuta código sobre DataFrame cacheado
+    1. Precarga DataFrame completo UNA VEZ
+    2. Lo mantiene en memoria para todas las consultas
+    3. Usa prompts personalizados por cliente/dominio
+    4. Ejecuta código generado localmente sobre el DataFrame cacheado
     """
     
     def __init__(
         self,
+        client_config: ClientConfig,
         api_key: Optional[str] = None,
         model: str = "llama-3.3-70b-versatile",
-        cpu_time: int = 5,  # Tiempo suficiente para operaciones normales
+        cpu_time: int = 5,
         memory_bytes: int = 200 * 1024 * 1024,
         sandbox_user: str = "nobody"
     ):
         """
-        Inicializa el agente.
+        Inicializa el agente con configuración de cliente.
         
         Args:
+            client_config: Configuración del cliente
             api_key: Clave API de Groq
             model: Modelo de Groq a usar
             cpu_time: Tiempo máximo de CPU para sandbox
             memory_bytes: Memoria máxima para sandbox
             sandbox_user: Usuario para sandbox
         """
+        self.client_config = client_config
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY no está definida.")
@@ -62,7 +66,9 @@ class SimpleCachedCodeAgent:
             user_name=sandbox_user
         )
         
-        logger.info(f"✅ SimpleCachedCodeAgent inicializado con modelo: {model}")
+        logger.info(f"✅ BaseAgent inicializado para cliente: {client_config.client_name}")
+        logger.info(f"   Modelo: {model}")
+        logger.info(f"   Workspace: {client_config.get_workspace_folder()}")
     
     def preload_dataframe(self, excel_path: str, sheet_name: Optional[str] = None) -> bool:
         """
@@ -77,6 +83,8 @@ class SimpleCachedCodeAgent:
         """
         try:
             logger.info(f"🔄 Precargando DataFrame desde: {excel_path}")
+            logger.info(f"   Cliente: {self.client_config.client_name}")
+            
             persistent_cache.load_dataframe(excel_path, sheet_name)
             
             # Inyectar DataFrame en el sandbox para que esté disponible
@@ -94,28 +102,14 @@ class SimpleCachedCodeAgent:
         """Verifica si el DataFrame está listo para usar."""
         return persistent_cache.is_loaded()
     
-    def generate_code(self, prompt: str) -> str:
+    def _build_system_prompt(self) -> str:
         """
-        Genera código Python usando el API de Groq.
+        Construye el prompt del sistema personalizado para el cliente.
         
-        Args:
-            prompt: Prompt para generación de código
-            
         Returns:
-            str: Código Python generado
-            
-        Raises:
-            PromptError: Si falla la generación
+            str: Prompt del sistema
         """
-        try:
-            logger.debug("🤖 Generando código con Groq...")
-            
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": """Eres un experto en pandas que genera código Python para analizar datos Excel.
+        base_prompt = """Eres un experto en pandas que genera código Python para analizar datos Excel.
 
 REGLAS CRÍTICAS:
 1. El DataFrame YA ESTÁ CARGADO en la variable 'df' - NO lo cargues
@@ -135,6 +129,38 @@ EJEMPLO DE FORMATO CORRECTO:
 df_clean = df.dropna(subset=['numbercall']).copy()
 counts = df_clean['numbercall'].value_counts()
 print(f"Resultado: {counts.idxmax()}")"""
+
+        # Añadir contexto específico del cliente
+        specialized_context = self.client_config.get_specialized_prompt_context()
+        if specialized_context:
+            base_prompt += f"\n\nCONTEXTO ESPECÍFICO DEL DOMINIO:\n{specialized_context}"
+        
+        return base_prompt
+    
+    def generate_code(self, prompt: str) -> str:
+        """
+        Genera código Python usando el API de Groq con prompts personalizados.
+        
+        Args:
+            prompt: Prompt para generación de código
+            
+        Returns:
+            str: Código Python generado
+            
+        Raises:
+            PromptError: Si falla la generación
+        """
+        try:
+            logger.debug(f"🤖 Generando código con Groq para cliente: {self.client_config.client_name}")
+            
+            system_prompt = self._build_system_prompt()
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": system_prompt
                     },
                     {
                         "role": "user", 
@@ -147,7 +173,7 @@ print(f"Resultado: {counts.idxmax()}")"""
             content = response.choices[0].message.content or ""
             code = content.strip()
             
-            # Limpiar código más agresivamente
+            # Limpiar código 
             if code.startswith("```python"):
                 code = code.replace("```python", "").replace("```", "").strip()
             elif code.startswith("```"):
@@ -192,6 +218,7 @@ print(f"Resultado: {counts.idxmax()}")"""
         # Construir prompt con información estructural únicamente
         prompt = f"""
 INFORMACIÓN DEL DATASET:
+- Cliente: {self.client_config.client_name}
 - Archivo: {schema_summary.get('file_path', 'No especificado')}
 - Filas: {schema_summary.get('rows', 0):,}
 - Columnas: {schema_summary.get('columns', 0)}
@@ -283,3 +310,13 @@ INSTRUCCIONES:
         persistent_cache.clear_cache()
         self.sandbox.clear_injected_dataframe()
         logger.info("🧹 Caché y DataFrame inyectado limpiados")
+    
+    def update_client_config(self, new_client_config: ClientConfig):
+        """
+        Actualiza la configuración del cliente.
+        
+        Args:
+            new_client_config: Nueva configuración de cliente
+        """
+        self.client_config = new_client_config
+        logger.info(f"🔄 Configuración actualizada para cliente: {new_client_config.client_name}")
