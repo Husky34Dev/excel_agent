@@ -9,9 +9,8 @@
     "welcome_message": "Sistema optimizado para análisis de datos de call center",
     "default_file": "data/call_center/demo.xlsx",
     "example_questions": [
-      "¿Cuántas llamadas fueron atendidas hoy?",
+      "¿Que numero de telefono recibió más llamadas y cuantas?",
       "¿Cuál es la duración promedio de las llamadas?",
-      "¿Qué campaña tiene mejor tasa de conversión?",
       "¿En qué horario se atienden más llamadas?",
       "¿Cuál es el resultado más común de las llamadas?"
     ]

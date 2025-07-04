@@ -1,6 +1,7 @@
 import subprocess
 import tempfile
 import os
+import sys
 import platform
 import ast
 import re
@@ -330,7 +331,9 @@ with open(r'{self._injected_dataframe_path}', 'rb') as f:
             script_path.write_text(full_code, encoding='utf-8')
             
             # Preparar comando y configuración según el SO
-            cmd = ["python", str(script_path)]
+            # Usar el Python del entorno virtual actual
+            python_executable = sys.executable
+            cmd = [python_executable, str(script_path)]
             preexec_fn = None if self.is_windows else self._preexec_unix
             
             logger.debug(f"Ejecutando código validado en {script_path}")

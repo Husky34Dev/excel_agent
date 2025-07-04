@@ -41,6 +41,7 @@ env/
 
 # Project specific - ARCHIVOS TEMPORALES Y CACHÉ
 .sandbox_tmp/
+tmp/
 cache/
 logs/
 

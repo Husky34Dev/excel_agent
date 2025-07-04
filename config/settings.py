@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     sandbox_cpu_time: int = 2
     sandbox_memory_bytes: int = 200 * 1024 * 1024
     sandbox_user: str = "nobody"
-    sandbox_temp_dir: str = ".sandbox_tmp"
+    sandbox_temp_dir: str
 
     # Excel
     excel_default_sheet: str = "0"

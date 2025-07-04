@@ -134,13 +134,13 @@ Modos de uso:
         # Verificar que el archivo Excel existe (usar default del cliente si no se especifica)
         if not file_arg or file_arg == "data/input/demo.xlsx":
             # Usar archivo por defecto del cliente
-            default_file = self.client_config.get_default_file()
+            default_file = self.client_config.get_default_file() # type: ignore
             if default_file and Path(default_file).exists():
                 return default_file
         
         if not Path(file_arg).exists():
             print(f"❌ Error: Archivo no encontrado: {file_arg}")
-            return None
+            return None # type: ignore
         
         return file_arg
     
@@ -148,10 +148,10 @@ Modos de uso:
         """Inicializar el agente con la configuración actual."""
         try:
             settings = get_settings()
-            self.logger.info(f"Iniciando agente con modelo {settings.groq_model}")
+            self.logger.info(f"Iniciando agente con modelo {settings.groq_model}") # type: ignore
             
             self.agent = BaseAgent(
-                client_config=self.client_config,
+                client_config=self.client_config, # type: ignore
                 api_key=settings.groq_api_key,
                 model=settings.groq_model,
                 cpu_time=settings.sandbox_cpu_time,
@@ -165,36 +165,36 @@ Modos de uso:
             
         except Exception as e:
             print(f"💥 Error inicializando agente: {str(e)}")
-            self.logger.exception("Error inicializando agente")
+            self.logger.exception("Error inicializando agente") # type: ignore
             return False
     
     def process_question(self, excel_path: str, question: str, specific_sheet=None):
         """Procesar una pregunta del usuario."""
         try:
-            self.logger.info(f"Procesando pregunta: {question}")
-            result = self.agent.ask(excel_path, question, sheet_name=specific_sheet)
+            self.logger.info(f"Procesando pregunta: {question}") # type: ignore
+            result = self.agent.ask(excel_path, question, sheet_name=specific_sheet) # type: ignore
             return result, None
         except LoaderError as e:
             error_msg = f"Error al cargar el archivo Excel: {str(e)}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg) # type: ignore
             return None, error_msg
         except ExecutionError as e:
             error_msg = f"Error de ejecución: {e.stderr}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg) # type: ignore
             return None, error_msg
         except CodeAgentError as e:
             error_msg = f"Error del agente: {str(e)}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg) # type: ignore
             return None, error_msg
         except Exception as e:
             error_msg = f"Error inesperado: {str(e)}"
-            self.logger.exception(error_msg)
+            self.logger.exception(error_msg) # type: ignore
             return None, error_msg
     
     def run_single_query_mode(self, excel_path: str, question: str, specific_sheet=None):
         """Ejecutar modo de consulta única."""
-        self.logger.info(f"Archivo Excel: {excel_path}")
-        self.logger.info(f"Pregunta: {question}")
+        self.logger.info(f"Archivo Excel: {excel_path}") # type: ignore
+        self.logger.info(f"Pregunta: {question}") # type: ignore
 
         # Inicializar agente
         if not self.initialize_agent():
@@ -222,7 +222,7 @@ Modos de uso:
         # Crear y ejecutar sesión interactiva
         session = InteractiveSession(
             agent=self.agent,
-            client_config=self.client_config,
+            client_config=self.client_config, # type: ignore
             client_manager=self.client_manager,
             logger=self.logger
         )

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Chatbot - Interfaz Web</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .drag-area {
+            border: 2px dashed #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .drag-area.drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .chat-message {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-robot text-blue-600"></i>
+                            Excel Chatbot
+                        </h1>
+                        <span class="text-sm text-gray-500">v2.0 - Interfaz Web</span>
+                    </div>
+                    
+                    <!-- Selector de Cliente -->
+                    <div class="flex items-center space-x-4">
+                        <label for="clientSelect" class="text-sm font-medium text-gray-700">Cliente:</label>
+                        <select id="clientSelect" class="form-select rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200">
+                            <option value="">Seleccionar cliente...</option>
+                            {% for client_id, client_data in clients.items() %}
+                            <option value="{{ client_id }}" 
+                                    data-name="{{ client_data.name }}"
+                                    data-description="{{ client_data.description }}"
+                                    data-banner="{{ client_data.banner_title }}">
+                                {{ client_data.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Panel Izquierdo: Upload y Archivos -->
+                <div class="lg:col-span-1 space-y-6">
+                    
+                    <!-- Información del Cliente -->
+                    <div id="clientInfo" class="bg-white rounded-lg shadow p-6 hidden">
+                        <h3 id="clientBanner" class="text-lg font-semibold text-gray-900 mb-2"></h3>
+                        <p id="clientDescription" class="text-sm text-gray-600 mb-4"></p>
+                        
+                        <!-- Preguntas de Ejemplo -->
+                        <div id="exampleQuestions" class="space-y-2">
+                            <h4 class="text-sm font-medium text-gray-700">Preguntas de ejemplo:</h4>
+                            <div id="questionsList" class="space-y-1"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Área de Upload -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-cloud-upload-alt text-blue-600"></i>
+                            Subir Excel
+                        </h3>
+                        
+                        <div id="dragArea" class="drag-area p-8 rounded-lg text-center cursor-pointer">
+                            <div class="space-y-4">
+                                <i class="fas fa-file-excel text-4xl text-gray-400"></i>
+                                <div>
+                                    <p class="text-gray-600">Arrastra tu archivo Excel aquí</p>
+                                    <p class="text-sm text-gray-400">o haz clic para seleccionar</p>
+                                </div>
+                                <p class="text-xs text-gray-500">
+                                    Formatos soportados: .xlsx, .xls (máx. 50MB)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+                        
+                        <!-- Progress Bar -->
+                        <div id="uploadProgress" class="mt-4 hidden">
+                            <div class="bg-gray-200 rounded-full h-2">
+                                <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p id="uploadStatus" class="text-sm text-gray-600 mt-2">Subiendo...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de Archivos -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-folder text-blue-600"></i>
+                            Archivos Disponibles
+                        </h3>
+                        <div id="filesList" class="space-y-2">
+                            <p class="text-gray-500 text-sm">Selecciona un cliente para ver archivos</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Panel Principal: Chat -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow h-full flex flex-col">
+                        
+                        <!-- Header del Chat -->
+                        <div class="p-6 border-b">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-900">
+                                    <i class="fas fa-comments text-blue-600"></i>
+                                    Consultas Excel
+                                </h3>
+                                <div class="flex items-center space-x-2">
+                                    <select id="fileSelect" class="form-select text-sm rounded border-gray-300" disabled>
+                                        <option value="">Seleccionar archivo...</option>
+                                    </select>
+                                    <button id="clearChat" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Área de Mensajes -->
+                        <div id="chatMessages" class="flex-1 p-6 overflow-y-auto space-y-4 min-h-96">
+                            <div class="text-center text-gray-500">
+                                <i class="fas fa-robot text-4xl mb-4"></i>
+                                <p>¡Hola! Selecciona un cliente y archivo para comenzar a hacer consultas sobre tus datos de Excel.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Input Area -->
+                        <div class="p-6 border-t">
+                            <form id="queryForm" class="flex space-x-4">
+                                <input 
+                                    type="text" 
+                                    id="queryInput" 
+                                    placeholder="Escribe tu pregunta sobre los datos..."
+                                    class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+                                    disabled
+                                >
+                                <button 
+                                    type="submit" 
+                                    id="sendButton"
+                                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    disabled
+                                >
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Datos de clientes para JavaScript
+        window.clientsData = {{ clients|tojson }};
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
