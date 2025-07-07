@@ -1,0 +1,35 @@
+[
+  {
+    "name": "M\u00e9trica",
+    "dtype": "object",
+    "sample_values": [
+      "Total Ventas",
+      "N\u00famero de Transacciones",
+      "Ticket Promedio",
+      "Total Empleados",
+      "Empleados Activos"
+    ]
+  },
+  {
+    "name": "Valor",
+    "dtype": "object",
+    "sample_values": [
+      "\u20ac655,759.29",
+      "1500",
+      "\u20ac437.17",
+      "12",
+      "7"
+    ]
+  },
+  {
+    "name": "Descripci\u00f3n",
+    "dtype": "object",
+    "sample_values": [
+      "Suma total de todas las ventas",
+      "N\u00famero total de transacciones",
+      "Valor promedio por transacci\u00f3n",
+      "Total de empleados registrados",
+      "Empleados actualmente activos"
+    ]
+  }
+]

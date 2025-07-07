@@ -1,0 +1,19 @@
+{
+  "file_path": "data/default/empresa-demo.xlsx",
+  "rows": 8,
+  "columns": 3,
+  "column_names": [
+    "M\u00e9trica",
+    "Valor",
+    "Descripci\u00f3n"
+  ],
+  "dtypes": {
+    "M\u00e9trica": "object",
+    "Valor": "object",
+    "Descripci\u00f3n": "object"
+  },
+  "file_size": 97528,
+  "file_mtime": 1751913089.5673442,
+  "cache_time": "2025-07-07T20:36:34.245345",
+  "memory_usage_mb": 0.0020589828491210938
+}

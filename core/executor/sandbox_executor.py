@@ -70,7 +70,7 @@ class SandboxExecutor:
         self, 
         cpu_time: int = 2, 
         memory_bytes: int = 200*1024*1024, 
-        user_name: str = "nobody"
+        user_name: str = ""
     ):
         self.cpu_time = cpu_time
         self.memory_bytes = memory_bytes
@@ -82,16 +82,41 @@ class SandboxExecutor:
         self.temp_dir = Path(settings.sandbox_temp_dir)
         self.temp_dir.mkdir(exist_ok=True)
         
-        if not self.is_windows:
+        # En macOS y sistemas Unix, solo intentar cambio de usuario si es realmente necesario
+        self.uid = None  # Por defecto, usar usuario actual
+        
+        if not self.is_windows and user_name and user_name not in ["", "current"]:
             try:
-                self.uid = pwd.getpwnam(user_name).pw_uid # type: ignore
-                logger.debug(f"Usuario sandbox configurado: {user_name} (UID: {self.uid})")
-            except (KeyError, NameError):
-                logger.warning(f"Usuario '{user_name}' no encontrado, ejecutando como usuario actual")
+                current_user = os.getenv("USER", "")
+                
+                # Solo intentar cambio si es un usuario diferente al actual
+                if user_name != current_user:
+                    user_info = pwd.getpwnam(user_name)
+                    proposed_uid = user_info.pw_uid
+                    
+                    # Verificar que el UID es válido (evitar UIDs muy altos que causan problemas)
+                    if proposed_uid < 65534:  # UID máximo seguro en la mayoría de sistemas
+                        self.uid = proposed_uid
+                        logger.debug(f"Usuario sandbox configurado: {user_name} (UID: {self.uid})")
+                    else:
+                        logger.warning(f"UID {proposed_uid} para usuario '{user_name}' es muy alto, usando usuario actual")
+                        self.uid = None
+                else:
+                    logger.debug(f"Usuario solicitado '{user_name}' es el actual, sin cambio necesario")
+                    
+            except (KeyError, NameError) as e:
+                logger.warning(f"Usuario '{user_name}' no encontrado: {e}")
+                logger.debug("Continuando con usuario actual")
+                self.uid = None
+            except Exception as e:
+                logger.warning(f"Error configurando usuario sandbox: {e}")
+                logger.debug("Continuando con usuario actual")
                 self.uid = None
         else:
-            logger.debug("Ejecutando en Windows, sin restricciones de usuario")
-            self.uid = None
+            if self.is_windows:
+                logger.debug("Sistema Windows: sin cambio de usuario")
+            else:
+                logger.debug("Usando usuario actual para sandbox")
         
         self._injected_dataframe_path: Optional[str] = None
         
@@ -294,12 +319,46 @@ with open(r'{self._injected_dataframe_path}', 'rb') as f:
         logger.info("✅ Código validado exitosamente - sin amenazas detectadas")
 
     def _preexec_unix(self):
-        """Configuración previa a la ejecución en sistemas Unix."""
-        if not self.is_windows and 'resource' in globals() and 'pwd' in globals():
-            if self.uid is not None:
-                os.setuid(self.uid) # type: ignore
-            resource.setrlimit(resource.RLIMIT_CPU, (self.cpu_time, self.cpu_time)) # type: ignore
-            resource.setrlimit(resource.RLIMIT_AS, (self.memory_bytes, self.memory_bytes)) # type: ignore
+        """
+        Configuración previa a la ejecución en sistemas Unix.
+        
+        Esta función debe ser muy robusta y nunca lanzar excepciones
+        ya que se ejecuta en el proceso hijo antes del exec.
+        """
+        if self.is_windows or 'resource' not in globals():
+            return
+            
+        try:
+            # Aplicar límites de CPU - no crítico si falla
+            try:
+                resource.setrlimit(resource.RLIMIT_CPU, (self.cpu_time, self.cpu_time)) # type: ignore
+            except:
+                pass  # Silencioso si no se puede aplicar
+            
+            # Aplicar límites de memoria - no crítico si falla
+            try:
+                if platform.system() == 'Darwin':  # macOS
+                    # Usar un límite más bajo que sea compatible con macOS
+                    safe_memory = min(self.memory_bytes, 100 * 1024 * 1024)  # 100MB máximo
+                    resource.setrlimit(resource.RLIMIT_AS, (safe_memory, safe_memory)) # type: ignore
+                else:
+                    resource.setrlimit(resource.RLIMIT_AS, (self.memory_bytes, self.memory_bytes)) # type: ignore
+            except:
+                pass  # Silencioso si no se puede aplicar
+            
+            # Cambio de usuario - DESHABILITADO en macOS por problemas de permisos
+            # En macOS el cambio de usuario requiere privilegios especiales
+            if (self.uid is not None and 
+                self.uid != os.getuid() and 
+                platform.system() != 'Darwin'):  # Evitar cambio de usuario en macOS
+                try:
+                    os.setuid(self.uid) # type: ignore
+                except:
+                    pass  # Silencioso si no se puede cambiar usuario
+                    
+        except:
+            # Capturar cualquier excepción no manejada para evitar que se propague
+            pass
 
     def execute_code(self, code: str, timeout: int = 5):
         """

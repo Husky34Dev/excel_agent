@@ -1,31 +1,44 @@
 {
-  "client_name": "Excel Agent - Genérico",
+  "client_name": "Excel Agent - Empresa Demo",
   "client_id": "default",
-  "description": "Configuración genérica para análisis de Excel",
+  "description": "Análisis completo de datos empresariales con múltiples hojas",
   "ui": {
-    "banner_title": "🤖 EXCEL AGENT",
-    "banner_subtitle": "Análisis Inteligente de Datos Excel",
-    "welcome_message": "Sistema genérico para análisis de datos Excel",
-    "default_file": "data/default/simple-demo.xlsx",
+    "banner_title": "🏢 EXCEL AGENT - EMPRESA DEMO",
+    "banner_subtitle": "Análisis Inteligente de Datos Empresariales",
+    "welcome_message": "Sistema de análisis para datos de ventas, empleados e inventario",
+    "default_file": "data/default/empresa-demo.xlsx",
     "example_questions": [
-      "¿Cuántas filas tiene el Excel?",
-      "¿Cuáles son las columnas disponibles?",
-      "¿Cuál es el promedio de la primera columna numérica?",
-      "¿Hay valores nulos en los datos?",
-      "¿Cuáles son los valores únicos de la primera columna de texto?"
+      "¿Cuáles son las ventas totales del año?",
+      "¿Qué vendedor tiene mejor performance?",
+      "¿Cuál es el producto más vendido?",
+      "¿Cuántos empleados hay por departamento?",
+      "¿Qué productos están en stock crítico?",
+      "¿Cuál es el salario promedio por departamento?",
+      "¿En qué mes se vendió más?",
+      "¿Cuáles son los top 5 productos por ingresos?",
+      "¿Qué ciudad genera más ventas?",
+      "¿Cuál es el margen de beneficio promedio del inventario?"
     ]
   },
   "data": {
     "workspace_folder": "data/default",
     "auto_detect_columns": true,
-    "expected_columns": {}
+    "expected_columns": {
+      "ventas": ["Fecha", "Producto", "Vendedor", "Ciudad", "Precio_Final"],
+      "empleados": ["Nombre_Completo", "Departamento", "Cargo", "Salario_Anual"],
+      "inventario": ["Nombre_Producto", "Categoría", "Stock_Actual", "Precio_Venta"]
+    }
   },
   "prompts": {
-    "domain_context": "Datos genéricos de Excel sin dominio específico",
+    "domain_context": "Datos empresariales incluyendo ventas, empleados e inventario",
     "specialized_instructions": [
-      "Usar nombres de columnas exactos como aparecen en el dataset",
-      "Manejar valores nulos apropiadamente",
-      "Proporcionar resultados claros y concisos"
+      "Analizar tendencias de ventas por fecha, vendedor y producto",
+      "Calcular métricas de performance y KPIs empresariales",
+      "Identificar oportunidades de mejora en inventario",
+      "Proporcionar insights de recursos humanos",
+      "Usar nombres de columnas exactos del dataset",
+      "Formatear valores monetarios con símbolo €",
+      "Incluir gráficos y visualizaciones cuando sea apropiado"
     ]
   }
 }

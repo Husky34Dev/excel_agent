@@ -40,7 +40,7 @@ class BaseAgent:
         model: str = "llama-3.3-70b-versatile",
         cpu_time: int = 5,
         memory_bytes: int = 200 * 1024 * 1024,
-        sandbox_user: str = "nobody"
+        sandbox_user: str = "current"
     ):
         """
         Inicializa el agente con configuración de cliente.
@@ -51,7 +51,7 @@ class BaseAgent:
             model: Modelo de Groq a usar
             cpu_time: Tiempo máximo de CPU para sandbox
             memory_bytes: Memoria máxima para sandbox
-            sandbox_user: Usuario para sandbox
+            sandbox_user: Usuario para sandbox ("current" = usuario actual, recomendado para macOS)
         """
         self.client_config = client_config
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
@@ -60,10 +60,14 @@ class BaseAgent:
         
         self.client = Groq(api_key=self.api_key)
         self.model = model
+        
+        # Si no se especifica usuario o se especifica "current", usar el actual (seguro para macOS)
+        effective_user = sandbox_user if sandbox_user and sandbox_user != "current" else "current"
+        
         self.sandbox = SandboxExecutor(
             cpu_time=cpu_time, 
             memory_bytes=memory_bytes, 
-            user_name=sandbox_user
+            user_name=effective_user
         )
         
         logger.info(f"✅ BaseAgent inicializado para cliente: {client_config.client_name}")

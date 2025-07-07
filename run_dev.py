@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script para ejecutar el servidor web con uvicorn directamente.
-Uso: python run_web.py
+Script para desarrollo - ejecutar el servidor web con uvicorn con monitoreo limitado.
+Uso: python run_dev.py
 """
 import os
 import subprocess
@@ -9,29 +9,35 @@ import sys
 from pathlib import Path
 
 def main():
-    """Ejecutar el servidor web usando uvicorn directamente."""
-    print("🚀 Iniciando Excel Chatbot Web Interface con uvicorn...")
+    """Ejecutar el servidor web para desarrollo."""
+    print("🚀 Iniciando Excel Chatbot en modo desarrollo...")
     print("📱 Interfaz disponible en: http://localhost:8000")
     print("📋 API docs en: http://localhost:8000/docs")
     print("⚡ Para parar el servidor: Ctrl+C")
     print("-" * 50)
     
     try:
-        # Ejecutar uvicorn directamente (excluir directorios problemáticos del watch)
-        subprocess.run([
+        # Usar watchfiles con patrones específicos para evitar reinicios innecesarios
+        cmd = [
             sys.executable, "-m", "uvicorn",
             "core.web.app:app",
             "--host", "0.0.0.0",
             "--port", "8000",
             "--reload",
-            "--reload-dir", ".",
-            "--reload-exclude", ".venv/*",
-            "--reload-exclude", "*.pyc",
-            "--reload-exclude", "__pycache__/*",
-            "--reload-exclude", "tmp/*",
-            "--reload-exclude", "*.log",
+            "--reload-dir", "core",
+            "--reload-dir", "templates", 
+            "--reload-dir", "config",
+            "--reload-dir", "clients",
+            "--reload-include", "*.py",
+            "--reload-include", "*.html",
+            "--reload-include", "*.js",
+            "--reload-include", "*.css",
             "--log-level", "info"
-        ], check=True)
+        ]
+        
+        print(f"Ejecutando: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True)
+        
     except KeyboardInterrupt:
         print("\n⚠️ Servidor detenido por el usuario")
     except subprocess.CalledProcessError as e:
