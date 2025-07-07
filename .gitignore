@@ -42,7 +42,11 @@ env/
 # Project specific - ARCHIVOS TEMPORALES Y CACHÉ
 .sandbox_tmp/
 tmp/
-cache/
+# Excluir caches temporales pero permitir cache persistente del sistema
+__pycache__/
+*.pyc
+.pytest_cache/
+# Permitir core/cache/ para cache persistente del sistema
 logs/
 
 # Project specific - DATOS DE ENTRADA (NO SUBIR)
