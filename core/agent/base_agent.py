@@ -124,6 +124,8 @@ CÓDIGO SEGURO Y CONSISTENTE:
 - Para máximos: .idxmax() y .max()
 - Convierte a string cuando sea necesario: .astype(str)
 - USA print() para mostrar resultados finales
+- Para caracteres especiales usa: print(f"Texto: {variable}")
+- Evita usar comillas simples en strings con acentos
 
 EJEMPLO DE FORMATO CORRECTO:
 df_clean = df.dropna(subset=['numbercall']).copy()

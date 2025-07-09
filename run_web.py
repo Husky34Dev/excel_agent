@@ -17,14 +17,16 @@ def main():
     print("-" * 50)
     
     try:
-        # Ejecutar uvicorn directamente (excluir tmp/ del watch para evitar reinicios)
+        # Ejecutar uvicorn con configuración simplificada y robusta
         subprocess.run([
             sys.executable, "-m", "uvicorn",
             "core.web.app:app",
             "--host", "0.0.0.0",
             "--port", "8000",
             "--reload",
-            "--reload-exclude", "tmp",
+            "--reload-dir", "core",
+            "--reload-dir", "templates", 
+            "--reload-dir", "config",
             "--log-level", "info"
         ], check=True)
     except KeyboardInterrupt:

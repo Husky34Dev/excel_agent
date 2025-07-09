@@ -42,7 +42,7 @@ env/
 # Project specific - ARCHIVOS TEMPORALES Y CACHÉ
 .sandbox_tmp/
 tmp/
-cache/
+/cache/
 logs/
 
 # Project specific - DATOS DE ENTRADA (NO SUBIR)

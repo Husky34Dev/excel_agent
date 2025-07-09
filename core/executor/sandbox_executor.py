@@ -336,13 +336,33 @@ with open(r'{self._injected_dataframe_path}', 'rb') as f:
             cmd = [python_executable, str(script_path)]
             preexec_fn = None if self.is_windows else self._preexec_unix
             
+            # Configurar entorno limpio para evitar conflictos con uvicorn
+            env = os.environ.copy()
+            if self.is_windows:
+                # Configuración robusta para Windows con manejo correcto de UTF-8
+                env['PYTHONIOENCODING'] = 'utf-8'
+                env['PYTHONUNBUFFERED'] = '1'
+                env['PYTHONUTF8'] = '1'
+                env['LC_ALL'] = 'es_ES.UTF-8'
+                env['LANG'] = 'es_ES.UTF-8'
+                # Evitar conflictos con el reloader de uvicorn
+                env.pop('UVICORN_RELOAD', None)
+                env.pop('UVICORN_RELOAD_DIRS', None)
+            
             logger.debug(f"Ejecutando código validado en {script_path}")
+            
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 timeout=timeout,
-                preexec_fn=preexec_fn
+                preexec_fn=preexec_fn,
+                env=env,
+                stdin=subprocess.DEVNULL,
+                # Crear un grupo de procesos separado en Windows
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if self.is_windows else 0
             )
             
             logger.debug(f"Ejecución completada. Código de salida: {result.returncode}")

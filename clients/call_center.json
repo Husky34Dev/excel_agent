@@ -1,45 +1,62 @@
 {
   "client_name": "Call Center Analytics",
   "client_id": "call_center_demo",
-  "description": "Análisis de campañas telefónicas y call center",
+  "description": "Análisis de logs de call center con métricas de TACW y productividad",
   
   "ui": {
     "banner_title": "📞 CALL CENTER ANALYTICS",
-    "banner_subtitle": "Análisis Inteligente de Campañas Telefónicas",
-    "welcome_message": "Sistema optimizado para análisis de datos de call center",
+    "banner_subtitle": "Análisis de Logs Telefónicos",
+    "welcome_message": "Analiza logs de call center con métricas de TACW y productividad",
     "default_file": "data/call_center/demo.xlsx",
     "example_questions": [
-      "¿Que numero de telefono recibió más llamadas y cuantas?",
-      "¿Cuál es la duración promedio de las llamadas?",
-      "¿En qué horario se atienden más llamadas?",
-      "¿Cuál es el resultado más común de las llamadas?"
+      "¿Cuál es el TACW promedio por agente?",
+      "¿Qué agentes tienen mejor productividad?",
+      "¿Cuántas llamadas fueron exitosas por campaña?",
+      "¿Cómo se distribuye el tiempo total por skill?",
+      "¿Qué agentes tienen TACW excesivo (>180 segundos)?"
     ]
   },
   
   "data": {
     "workspace_folder": "data/call_center",
     "auto_detect_columns": true,
-    "expected_columns": {
-      "phone": ["numbercall", "telefono", "numero", "phone"],
-      "duration": ["duration", "duracion", "tiempo_llamada", "call_time"],
-      "campaign": ["campaign", "campana", "campaña", "camp"],
-      "result": ["resultcalldesc", "resultado", "status", "estado"],
-      "date": ["date", "fecha", "timestamp", "datetime"]
+    "column_definitions": {
+      "idlog_calls": "ID único del registro de llamada",
+      "fecha": "Fecha y hora de la llamada",
+      "extension": "Extensión telefónica del agente",
+      "agent": "ID del agente telefónico",
+      "idcampaign": "ID de la campaña",
+      "typecall": "Tipo de llamada (inbound/outbound)",
+      "typeskill": "Tipo de habilidad",
+      "skill": "Skill específico",
+      "numbercall": "Número telefónico",
+      "resultcall": "Código resultado",
+      "resultcalldesc": "Descripción del resultado",
+      "timepreviousready": "Tiempo en ready previo (segundos)",
+      "timequeue": "Tiempo en cola (segundos)",
+      "timering": "Tiempo de ring (segundos)",
+      "timecall": "Duración conversación (segundos)",
+      "timeacw": "TACW - Tiempo post-llamada (segundos)",
+      "timeivr": "Tiempo en IVR (segundos)",
+      "timetotal": "Tiempo total (segundos)",
+      "result": "Código resultado final",
+      "resultdesc": "Descripción resultado final",
+      "resultgroup": "Grupo resultado (exitosa/no exitosa)",
+      "transfer": "Llamada transferida (0/1)",
+      "trunk": "Línea telefónica usada",
+      "attempt": "Número de intento"
     }
   },
   
   "prompts": {
-    "domain_context": "Datos de call center con información de llamadas telefónicas, campañas, duraciones y resultados",
+    "domain_context": "Datos de call center con métricas de productividad. TACW (timeacw) es crítico: 30-120 seg normal para exitosas, >180 seg problemático. Llamadas exitosas cuando resultcalldesc contiene 'Atendida', 'Exitosa', 'Venta'.",
+    
     "specialized_instructions": [
-      "Para tasas de conversión, siempre usar porcentajes con 2 decimales",
-      "Para duraciones, convertir segundos a formato mm:ss si es necesario",
-      "Para análisis temporal, agrupar por horas del día o días de la semana",
-      "Considerar 'Atendida' como llamada exitosa para calcular tasas"
-    ],
-    "sample_queries": [
-      "Calcular porcentaje de llamadas atendidas vs no atendidas",
-      "Encontrar la hora del día con mayor actividad",
-      "Determinar qué campaña genera más conversiones"
+      "TACW normal: 30-120seg exitosas, >180seg problemático",
+      "Productividad = (llamadas exitosas/hora) * eficiencia TACW",
+      "Tiempo total = timequeue + timering + timecall + timeacw",
+      "Analizar por agente, campaña, skill, trunk",
+      "Identificar patrones temporales y oportunidades mejora"
     ]
   }
 }
